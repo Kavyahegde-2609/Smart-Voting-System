@@ -63,7 +63,7 @@ def compare_iris_similarity(img1, img2):
         print(f"Error in comparison: {e}")
         return 0
 
-# ================= Improved Eye Capture for Voting =================
+# ================= Improved Eye Capture for Voting - SINGLE CAMERA WINDOW =================
 def capture_eye_for_voting():
     cap = cv2.VideoCapture(0)
 
@@ -115,20 +115,28 @@ def capture_eye_for_voting():
                 if eye_frame.size == 0:
                     continue
 
-                # Display eye region in separate window
-                display_eye = cv2.resize(eye_frame, (400, 200))
-                cv2.imshow("Eye Region View", display_eye)
-
                 # Calculate eye openness
                 eye_open_dist = abs(top.y - bottom.y)
                 
+                # Create display frame with eye region and status
                 if eye_open_dist > 0.03 and eye_frame.shape[0] > 50 and eye_frame.shape[1] > 100:
                     stable_frames += 1
                     
-                    # Draw green rectangle on main frame
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(frame, f"Stable: {stable_frames}/{required_stable_frames}", 
-                               (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    # Resize eye frame for better visibility
+                    display_eye = cv2.resize(eye_frame, (600, 300))
+                    
+                    # Add green border for good capture
+                    display_eye = cv2.copyMakeBorder(display_eye, 10, 10, 10, 10, 
+                                                      cv2.BORDER_CONSTANT, value=(0, 255, 0))
+                    
+                    # Add status text on the eye frame
+                    cv2.putText(display_eye, f"Stable: {stable_frames}/{required_stable_frames}", 
+                               (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(display_eye, "Eyes detected - Hold steady", 
+                               (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    
+                    # Show only eye region window
+                    cv2.imshow("Eye Capture - Keep Eyes Open", display_eye)
                     
                     if stable_frames >= required_stable_frames:
                         captured = eye_frame.copy()
@@ -139,16 +147,36 @@ def capture_eye_for_voting():
                         return captured
                 else:
                     stable_frames = 0
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                    cv2.putText(frame, "Open eyes wider", (10, 30), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    
+                    # Resize eye frame for better visibility
+                    display_eye = cv2.resize(eye_frame, (600, 300))
+                    
+                    # Add red border for poor capture
+                    display_eye = cv2.copyMakeBorder(display_eye, 10, 10, 10, 10, 
+                                                      cv2.BORDER_CONSTANT, value=(0, 0, 255))
+                    
+                    # Add status text on the eye frame
+                    cv2.putText(display_eye, "Open eyes wider!", 
+                               (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                    cv2.putText(display_eye, "Look straight at camera", 
+                               (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                    
+                    # Show only eye region window
+                    cv2.imshow("Eye Capture - Keep Eyes Open", display_eye)
+        else:
+            # No face detected - show message
+            blank = cv2.zeros((320, 620, 3), dtype='uint8')
+            cv2.putText(blank, "No face detected", 
+                       (150, 160), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+            cv2.putText(blank, "Position your face in front of camera", 
+                       (80, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.imshow("Eye Capture - Keep Eyes Open", blank)
 
         # Timeout after 10 seconds
         if time.time() - start_time > 10:
             speak("Capture timeout. Please try again.")
             break
 
-        cv2.imshow("Adjust Your Eyes", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

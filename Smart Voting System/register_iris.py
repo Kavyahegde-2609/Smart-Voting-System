@@ -41,7 +41,7 @@ def save_voter(aadhaar, category, iris_path="", face_path=""):
     df.to_csv(csv_path, index=False)
 
 
-# ============ Improved Eye-Only Capture ============
+# ============ Improved Eye-Only Capture - SINGLE CAMERA WINDOW ============
 def capture_eye_only(aadhaar):
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
@@ -93,19 +93,25 @@ def capture_eye_only(aadhaar):
                 # Calculate eye openness
                 eye_open_dist = abs(top.y - bottom.y)
 
-                # Display the eye region in a separate window
-                if iris_crop.size != 0:
-                    display_eye = cv2.resize(iris_crop, (400, 200))
-                    cv2.imshow("Eye Region - Keep Eyes Open", display_eye)
-
                 # Check if eyes are open enough and image quality is good
                 if eye_open_dist > 0.03 and iris_crop.size != 0 and iris_crop.shape[0] > 50 and iris_crop.shape[1] > 100:
                     stable_frames += 1
                     
-                    # Draw green rectangle on main frame to indicate good capture
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(frame, f"Stable: {stable_frames}/{required_stable_frames}", 
-                               (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    # Resize eye frame for better visibility
+                    display_eye = cv2.resize(iris_crop, (600, 300))
+                    
+                    # Add green border for good capture
+                    display_eye = cv2.copyMakeBorder(display_eye, 10, 10, 10, 10, 
+                                                      cv2.BORDER_CONSTANT, value=(0, 255, 0))
+                    
+                    # Add status text on the eye frame
+                    cv2.putText(display_eye, f"Stable: {stable_frames}/{required_stable_frames}", 
+                               (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    cv2.putText(display_eye, "Eyes detected - Hold steady", 
+                               (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                    
+                    # Show only eye region window
+                    cv2.imshow("Eye Registration - Keep Eyes Open", display_eye)
                     
                     if stable_frames >= required_stable_frames:
                         iris_path = f"iris_{aadhaar}.png"
@@ -118,18 +124,38 @@ def capture_eye_only(aadhaar):
                         return iris_path
                 else:
                     stable_frames = 0
-                    # Draw red rectangle to indicate poor capture
+                    
+                    # Display eye region if available
                     if iris_crop.size != 0:
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                        cv2.putText(frame, "Open eyes wider", (10, 30), 
-                                   cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        # Resize eye frame for better visibility
+                        display_eye = cv2.resize(iris_crop, (600, 300))
+                        
+                        # Add red border for poor capture
+                        display_eye = cv2.copyMakeBorder(display_eye, 10, 10, 10, 10, 
+                                                          cv2.BORDER_CONSTANT, value=(0, 0, 255))
+                        
+                        # Add status text on the eye frame
+                        cv2.putText(display_eye, "Open eyes wider!", 
+                                   (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        cv2.putText(display_eye, "Look straight at camera", 
+                                   (20, 280), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+                        
+                        # Show only eye region window
+                        cv2.imshow("Eye Registration - Keep Eyes Open", display_eye)
+        else:
+            # No face detected - show message
+            blank = cv2.zeros((320, 620, 3), dtype='uint8')
+            cv2.putText(blank, "No face detected", 
+                       (150, 160), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 0, 255), 2)
+            cv2.putText(blank, "Position your face in front of camera", 
+                       (80, 200), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+            cv2.imshow("Eye Registration - Keep Eyes Open", blank)
 
         # Timeout after 10 seconds
         if time.time() - start_time > 10:
             speak("Capture timeout. Please try again.")
             break
 
-        cv2.imshow("Capturing Eyes - Look at Camera", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 

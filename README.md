@@ -70,6 +70,7 @@ Smart-Voting-System/
 ├── assets/
 └── README.md
 ```
+---
 
 ## ✨ Key Highlights
 
@@ -91,4 +92,4 @@ It is **NOT** an official voting platform and must not be used for real election
 
 ## 👩‍💻 Author
 
-Built by Kavya Mahabaleshwara Hegde
+Kavya Mahabaleshwara Hegde
